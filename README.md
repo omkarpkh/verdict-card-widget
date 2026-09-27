@@ -64,7 +64,7 @@ What only a live console can settle, and how the card learns the case has moved 
 
 - **Integration maintainers:** replace `widgets/get_blue_agent_analysis.html` and `.yaml` in `content/response_integrations/google/wiz/` with [`dist/verdict-card.html`](dist/verdict-card.html) and [`dist/verdict-card.yaml`](dist/verdict-card.yaml). The widget keeps the same action identifier, scope (alert), height (400) and default width (half).
 - **Admins:** add it to a playbook's view the way any predefined widget is added.
-- **Another agent:** change the two names at the top of the widget's script.
+- **Another agent:** change the two names at the top of the widget's script, the `action_identifier` in its YAML, and the result paths `findAnalysis` reads in `src/card.ts`.
 
 ## Build and test
 
