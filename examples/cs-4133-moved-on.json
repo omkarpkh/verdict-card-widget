@@ -11,12 +11,17 @@
           "confidenceLevel": "HIGH",
           "conclusion": "svc-backup’s key was used from 198.51.100.23, which is inside the published address range of the organisation’s backup provider. Listing backup-archive matches the nightly backup job. No objects were read beyond the job’s usual volume.",
           "dataCutoffAt": "2026-09-17T13:14:00.000Z",
+          "sourcesRead": [
+            "Wiz Defend cloud telemetry",
+            "Cloud audit log"
+          ],
           "claims": [
             {
               "text": "198.51.100.23 is inside the backup provider’s published address range.",
               "where": {
                 "kind": "source",
-                "label": "Wiz"
+                "label": "Wiz",
+                "url": "https://wiz.example/issues/5e7a2b19-0c4d-4d3e-8f6a-2b9c71d0e5f3"
               }
             },
             {
@@ -30,16 +35,25 @@
               "text": "No reads above the job’s usual volume.",
               "where": {
                 "kind": "source",
-                "label": "Wiz"
+                "label": "Wiz",
+                "url": "https://wiz.example/issues/5e7a2b19-0c4d-4d3e-8f6a-2b9c71d0e5f3"
               }
             }
-          ]
+          ],
+          "url": "https://wiz.example/issues/5e7a2b19-0c4d-4d3e-8f6a-2b9c71d0e5f3"
         }
       }
     }
   },
   "caseContext": {
     "fetchedAt": "2026-09-17T13:18:00.000Z",
+    "checkedAt": "2026-09-17T13:58:00.000Z",
+    "coveredAlerts": [
+      {
+        "id": "A1",
+        "name": "Access key for svc-backup used from new network location 198.51.100.23"
+      }
+    ],
     "casePriority": "MEDIUM",
     "alertsAfterCutoff": [
       {

@@ -31,10 +31,10 @@ const clock = JSON.parse(read('examples/clock.json')).now;
 const LABELS = {
   'google-content-hub-example': ['Google’s example', 'Google’s own example result, unchanged: the seven fields the action returns today.'],
   'cs-4133-today': ['Today’s fields', 'Synthetic case CS-4133 with only today’s seven fields. The card still gives the age and keeps confidence apart from severity.'],
-  'cs-4133-moved-on': ['Case moved on', 'CS-4133 with the fields the card asks for. An alert joined 43 minutes after the data the verdict used.'],
-  'cs-4127-fresh': ['Nothing newer', 'CS-4127 with the full fields. Nothing has joined the case since the data it used.'],
+  'cs-4133-moved-on': ['Case moved on', 'CS-4133 with the fields the card asks for. An alert happened 43 minutes after the data the verdict used.'],
+  'cs-4127-fresh': ['Nothing newer', 'CS-4127 with the full fields. Nothing in the case is newer than the data it used.'],
   'cs-4127-low-confidence': ['Low confidence', 'CS-4127 when the agent could not see everything. The recommendation is withdrawn and the gap is named.'],
-  'cs-4133-revised': ['Revised', 'CS-4133 after the analyst accepted at 14:04 and the agent re-ran with alert A3.'],
+  'cs-4133-revised': ['Revised', 'CS-4133 after the analyst overrode it at 14:04 and the agent re-ran with alert A3.'],
 };
 const results = [
   { id: 'google-content-hub-example', json: JSON.parse(read('third_party/google-content-hub/get_blue_agent_analysis_JsonResult_example.json')), clock: null },

@@ -63,7 +63,8 @@
     .v-benign .word { color: var(--benign); }
     .conf { color: var(--muted); }
     .conf b { color: var(--text); }
-    .age, .note, .fresh { color: var(--muted); }
+    .age, .note, .fresh, .sources, .scope { color: var(--muted); }
+    .prov { display: grid; gap: 2px; }
     .outdated { border: 1px solid var(--amber); background: var(--amber-bg); border-radius: 4px; padding: 6px 8px; }
     .outdated b { color: var(--amber); }
     .alert-name { color: var(--muted); font-size: 13px; line-height: 17px; margin-top: 2px; }
@@ -102,13 +103,19 @@
 // it says more as the result carries more. Every field it adds to that result is optional:
 //
 //   aiAnalysis.dataCutoffAt          the newest event the agent used              added by the agent
+//   aiAnalysis.sourcesRead[]         what the agent read                          added by the agent
+//   aiAnalysis.sourcesNotRead[]      what it could not read                       added by the agent
 //   aiAnalysis.claims[]              what it concluded from, and where to check   added by the agent
-//   aiAnalysis.missingEvidence       what it could not see                        added by the agent
-//   aiAnalysis.revisedFrom           the verdict this one replaces, and why       added by the agent
+//   aiAnalysis.missingEvidence       what it could not see, in its own words      added by the agent
+//   aiAnalysis.revisedFrom           the verdict this one replaces, why, and the  added by the integration,
+//                                    analyst's decision in between                which keeps the prior one
 //   aiAnalysis.url                   the analysis in Wiz                          added by the agent
 //   caseContext.fetchedAt            when the playbook added it to the case       added by the action
+//   caseContext.checkedAt            when the integration last checked the case   added by the action
+//   caseContext.coveredAlerts[]      the alerts in this case the verdict is about added by the action
 //   caseContext.casePriority         this console's own rating of the case        added by the action
-//   caseContext.alertsAfterCutoff[]  alerts that joined the case after the cut-off added by the action
+//   caseContext.alertsAfterCutoff[]  alerts whose events came after the cut-off   added by the action
+//                                    (their event time, not when they joined)
 //
 // A widget can display; it cannot change the case. So there is no button here that decides
 // anything: accept, override and undo are the integration's own actions, run from the host's
@@ -135,10 +142,17 @@
  
 
                            
+                                  
+                   
+                    
+ 
+
+                           
                    
                             
                      
                  
+                            
  
 
                             
@@ -148,6 +162,10 @@
                             
                         
                            
+                           
+                           
+                               
+                                  
                              
                                    
                      
@@ -262,6 +280,17 @@ function readClaim(x         )               {
   return t ? { text: t, where: readWhere(x.where) } : null;
 }
 
+function strings(x         )                  {
+  return Array.isArray(x) ? x.map(text).filter(Boolean) : null;
+}
+
+function readDecision(x         )                  {
+  if (!isObj(x)) return null;
+  const kind = text(x.kind).toLowerCase();
+  if (kind !== 'accepted' && kind !== 'overridden') return null;
+  return { kind, verdict: verdictOf(x.verdict), at: time(x.at) };
+}
+
 function readLater(x         )                    {
   if (!isObj(x)) return null;
   const id = text(x.id);
@@ -286,13 +315,19 @@ function readCard(result         )                   {
     analysedAt: time(a.analyzedAt),
     dataTo: time(a.dataCutoffAt),
     fetchedAt: time(c.fetchedAt),
+    checkedAt: time(c.checkedAt),
+    covered: Array.isArray(c.coveredAlerts)
+      ? c.coveredAlerts.map((x) => (isObj(x) ? text(x.id) : text(x))).filter(Boolean)
+      : null,
+    sourcesRead: strings(a.sourcesRead),
+    sourcesNotRead: strings(a.sourcesNotRead),
     casePriority: level(c.casePriority),
     laterAlerts: later,
     conclusion: text(a.conclusion),
     claims,
     missing: text(a.missingEvidence) || null,
     revision: isObj(r)
-      ? { verdict: verdictOf(r.verdict), analysedAt: time(r.analyzedAt), conclusion: text(r.conclusion), reason: text(r.reason) }
+      ? { verdict: verdictOf(r.verdict), analysedAt: time(r.analyzedAt), conclusion: text(r.conclusion), reason: text(r.reason), decision: readDecision(r.decision) }
       : null,
     analysisId: text(a.id),
     url: safeUrl(a.url),
@@ -364,25 +399,40 @@ function whereText(w              , names       )         {
   return `<span class="where">${w.url ? linkOut(w.url, `Only in ${w.label}`) : `Only in ${esc(w.label)}`}</span>`;
 }
 
+function list(items          )         {
+  return items.map(esc).join(', ');
+}
+
+// What the verdict rests on: when it was made, what it read, and which alerts it is about. Whatever
+// the result leaves out is said plainly, in one line, rather than drawn as if it were known.
 function renderWhen(m           , now        )         {
-  if (m.analysedAt === null) return '<p class="when">The agent didn’t say when it ran.</p>';
+  const read = m.sourcesRead && m.sourcesRead.length
+    ? `<p class="sources">Read: ${list(m.sourcesRead)}.${m.sourcesNotRead && m.sourcesNotRead.length ? ` Not read: ${list(m.sourcesNotRead)}.` : ''}</p>`
+    : '';
+  const scope = m.covered && m.covered.length
+    ? `<p class="scope">About alert${m.covered.length === 1 ? '' : 's'} ${list(m.covered)} in this case.</p>`
+    : '';
+  const unsaid = [!m.sourcesRead ? 'what it read' : '', m.dataTo === null ? 'up to when' : ''].filter(Boolean).join(', or ');
+  const said = unsaid ? `<p class="note">The agent didn’t say ${unsaid}.</p>` : '';
+  // One group: when it ran, what it read, what it is about. The freshness check sits apart.
+  if (m.analysedAt === null) return `<div class="prov"><p class="when">The agent didn’t say when it ran.</p>${read}${scope}${said}</div>`;
   const cut = m.dataTo !== null ? `, using data to ${clock(m.dataTo, now)}` : '';
-  const said = m.dataTo === null ? '<p class="note">The agent didn’t say what data it used.</p>' : '';
   // Never a negative age: an agent's clock can run ahead of the analyst's.
   const age = span(Math.max(0, now - m.analysedAt));
-  return `<p class="when"><b>As of ${clock(m.analysedAt, now)}</b>${cut}. <span class="age">${age[0].toUpperCase()}${age.slice(1)} old.</span></p>${said}`;
+  return `<div class="prov"><p class="when"><b>As of ${clock(m.analysedAt, now)}</b>${cut}. <span class="age">${age[0].toUpperCase()}${age.slice(1)} old.</span></p>${read}${scope}${said}</div>`;
 }
 
 function renderFreshness(m           , now        )         {
   const later = alertsAfter(m);
   const cutoff = cutoffOf(m);
-  if (later === null || cutoff === null) return '<p class="note">Not checked against alerts that joined this case later.</p>';
-  if (later.length === 0) return `<p class="fresh">No alert has joined this case since the data it used.</p>`;
+  if (later === null || cutoff === null) return '<p class="note">Can’t tell whether the case has moved on: nothing checked it.</p>';
+  const checked = m.checkedAt !== null ? ` Checked ${clock(m.checkedAt, now)}.` : '';
+  if (later.length === 0) return `<p class="fresh">Nothing in this case is newer than its data.${checked}</p>`;
   const first = later[0];
   const after = m.dataTo !== null ? 'after the data this verdict used' : 'after this verdict was made';
-  const more = later.length > 1 ? ` ${later.length - 1} more joined after it.` : '';
+  const more = later.length > 1 ? ` ${later.length - 1} more came after it.` : '';
   const name = first.name ? `<p class="alert-name">${esc(first.id)} · ${esc(first.name)}</p>` : '';
-  return `<div class="outdated" role="status"><p><b>Outdated.</b> Alert ${esc(first.id)} joined this case at ${clock(first.at, now)}, ${span(first.at - cutoff)} ${after}. The agent hasn’t seen it.${more}</p>${name}</div>`;
+  return `<div class="outdated" role="status"><p><b>Outdated.</b> Alert ${esc(first.id)} happened at ${clock(first.at, now)}, ${span(first.at - cutoff)} ${after}. The agent hasn’t seen it.${more}${checked}</p>${name}</div>`;
 }
 
 function renderRatings(m           , names       )         {
@@ -391,7 +441,7 @@ function renderRatings(m           , names       )         {
   if (m.severity) parts.push(`Agent severity <b>${m.severity}</b> (${esc(names.agent)})`);
   if (m.casePriority) parts.push(`Case priority <b>${m.casePriority}</b> (this console)`);
   const verdict =
-    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ; the card changes neither.') : '';
+    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ.') : '';
   return `<p class="ratings">${parts.join(' · ')}.${verdict}</p>`;
 }
 
@@ -408,12 +458,18 @@ function renderClaims(m           , names       )         {
 function renderCard(m           , now        , names       )         {
   const low = isLowConfidence(m);
   const rev = m.revision;
+  const d = rev?.decision ?? null;
+  const decided = d
+    ? `; you ${d.kind === 'accepted' ? `accepted ${d.verdict}` : `overrode it to ${d.verdict}`}${d.at !== null ? ` at ${clock(d.at, now)}` : ''}`
+    : '';
   const revised = rev
-    ? `<p class="revised"><b>Revised.</b> It said ${rev.verdict}${rev.analysedAt !== null ? ` as of ${clock(rev.analysedAt, now)}` : ''}.${rev.reason ? ` ${esc(rev.reason)}` : ''}</p>`
+    ? `<p class="revised"><b>Revised.</b> It said ${rev.verdict}${rev.analysedAt !== null ? ` as of ${clock(rev.analysedAt, now)}` : ''}${decided}.${rev.reason ? ` ${esc(rev.reason)}` : ''}</p>`
     : '';
-  const withheld = low
-    ? `<div class="withheld"><b>No action recommended.</b> ${m.missing ? `The agent reports: ${esc(m.missing)}` : 'The agent’s confidence is low.'}</div>`
-    : '';
+  const why =
+    m.confidence === 'Low'
+      ? `The agent’s confidence is Low.${m.missing ? ` It reports: ${esc(m.missing)}` : ''}`
+      : `The agent reports a gap: ${esc(m.missing ?? '')}`;
+  const withheld = low ? `<div class="withheld"><b>No recommendation.</b> ${why}</div>` : '';
   const earlier =
     rev && rev.conclusion
       ? `<details class="earlier"><summary>Before the revision it concluded</summary><p>${esc(rev.conclusion)}</p></details>`

@@ -11,6 +11,10 @@
           "confidenceLevel": "HIGH",
           "conclusion": "A new access key for svc-reporting was created by j.doe@example.com and used within minutes to read 12,840 objects from prod-exports. A 3.1 GB transfer to an address this organisation has never contacted followed. The sequence matches data exfiltration with a freshly created credential.",
           "dataCutoffAt": "2026-09-17T13:08:00.000Z",
+          "sourcesRead": [
+            "Wiz Defend cloud telemetry",
+            "Cloud audit log"
+          ],
           "claims": [
             {
               "text": "The access key was created 3 minutes before the first read.",
@@ -37,16 +41,25 @@
               "text": "j.doe@example.com has never administered svc-reporting before.",
               "where": {
                 "kind": "source",
-                "label": "Wiz"
+                "label": "Wiz",
+                "url": "https://wiz.example/issues/b3e10c4d-2f6a-4e81-a9d7-5c0f18e2b644"
               }
             }
-          ]
+          ],
+          "url": "https://wiz.example/issues/b3e10c4d-2f6a-4e81-a9d7-5c0f18e2b644"
         }
       }
     }
   },
   "caseContext": {
     "fetchedAt": "2026-09-17T13:12:00.000Z",
+    "checkedAt": "2026-09-17T13:12:00.000Z",
+    "coveredAlerts": [
+      {
+        "id": "A2",
+        "name": "12,840 objects read from bucket prod-exports in 6 minutes"
+      }
+    ],
     "casePriority": "MEDIUM",
     "alertsAfterCutoff": []
   }

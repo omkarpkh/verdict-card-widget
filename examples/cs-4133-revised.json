@@ -11,6 +11,10 @@
           "confidenceLevel": "HIGH",
           "conclusion": "With alert A3 included, the key was used to make backup-archive publicly readable. That is not part of the backup job.",
           "dataCutoffAt": "2026-09-17T13:59:00.000Z",
+          "sourcesRead": [
+            "Wiz Defend cloud telemetry",
+            "Cloud audit log"
+          ],
           "claims": [
             {
               "text": "Public access was enabled on backup-archive using svc-backup’s key.",
@@ -23,22 +27,36 @@
               "text": "The session that enabled it did not come from the backup provider’s range.",
               "where": {
                 "kind": "source",
-                "label": "Wiz"
+                "label": "Wiz",
+                "url": "https://wiz.example/issues/5e7a2b19-0c4d-4d3e-8f6a-2b9c71d0e5f3"
               }
             }
           ],
+          "url": "https://wiz.example/issues/5e7a2b19-0c4d-4d3e-8f6a-2b9c71d0e5f3",
           "revisedFrom": {
             "verdict": "BENIGN",
             "analyzedAt": "2026-09-17T13:16:00.000Z",
             "conclusion": "svc-backup’s key was used from 198.51.100.23, which is inside the published address range of the organisation’s backup provider. Listing backup-archive matches the nightly backup job. No objects were read beyond the job’s usual volume.",
-            "reason": "Re-analysed with alert A3, which joined the case after the first analysis."
+            "reason": "Re-analysed with alert A3, which came after the data the first analysis used.",
+            "decision": {
+              "kind": "overridden",
+              "verdict": "MALICIOUS",
+              "at": "2026-09-17T14:04:00.000Z"
+            }
           }
         }
       }
     }
   },
   "caseContext": {
-    "fetchedAt": "2026-09-17T14:11:00.000Z",
+    "fetchedAt": "2026-09-17T14:10:00.000Z",
+    "checkedAt": "2026-09-17T14:10:00.000Z",
+    "coveredAlerts": [
+      {
+        "id": "A1",
+        "name": "Access key for svc-backup used from new network location 198.51.100.23"
+      }
+    ],
     "casePriority": "MEDIUM",
     "alertsAfterCutoff": []
   }

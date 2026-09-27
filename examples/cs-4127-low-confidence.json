@@ -11,6 +11,13 @@
           "confidenceLevel": "LOW",
           "conclusion": "A new access key for svc-reporting was created by j.doe@example.com and used within minutes to read 12,840 objects from prod-exports. The agent had no network telemetry for this account, so it could not tell whether any data left the organisation.",
           "dataCutoffAt": "2026-09-17T13:08:00.000Z",
+          "sourcesRead": [
+            "Wiz Defend cloud telemetry",
+            "Cloud audit log"
+          ],
+          "sourcesNotRead": [
+            "Network flow logs"
+          ],
           "claims": [
             {
               "text": "The access key was created 3 minutes before the first read.",
@@ -37,10 +44,12 @@
               "text": "j.doe@example.com has never administered svc-reporting before.",
               "where": {
                 "kind": "source",
-                "label": "Wiz"
+                "label": "Wiz",
+                "url": "https://wiz.example/issues/b3e10c4d-2f6a-4e81-a9d7-5c0f18e2b644"
               }
             }
           ],
+          "url": "https://wiz.example/issues/b3e10c4d-2f6a-4e81-a9d7-5c0f18e2b644",
           "missingEvidence": "No network telemetry for this account."
         }
       }
@@ -48,6 +57,13 @@
   },
   "caseContext": {
     "fetchedAt": "2026-09-17T13:12:00.000Z",
+    "checkedAt": "2026-09-17T13:12:00.000Z",
+    "coveredAlerts": [
+      {
+        "id": "A2",
+        "name": "12,840 objects read from bucket prod-exports in 6 minutes"
+      }
+    ],
     "casePriority": "MEDIUM",
     "alertsAfterCutoff": []
   }

@@ -86,7 +86,7 @@ test('low confidence, or a gap the agent names, withdraws the recommendation', (
   assert.equal(isLowConfidence(example('cs-4127-fresh')), false);
   const low = example('cs-4127-low-confidence');
   assert.equal(isLowConfidence(low), true);
-  assert.match(renderCard(low, CLOCK, NAMES), /No action recommended\./);
+  assert.match(renderCard(low, CLOCK, NAMES), /No recommendation\./);
   const gapOnly = readCard({ aiAnalysis: { verdict: 'BENIGN', confidenceLevel: 'HIGH', missingEvidence: 'No network telemetry.' } });
   assert.equal(isLowConfidence(gapOnly), true);
 });
@@ -97,16 +97,16 @@ test('a revision says what it replaced, and the revised verdict is checked again
   assert.equal(r.revision?.verdict, 'Benign');
   assert.equal(alertsAfter(r).length, 0, 'the revision saw A3, so it is no longer outdated');
   const html = renderCard(r, CLOCK, NAMES);
-  assert.match(html, /Revised\.<\/b> It said Benign as of 13:16 UTC\./);
+  assert.match(html, /Revised\.<\/b> It said Benign as of 13:16 UTC; you overrode it to Malicious at 14:04 UTC\./);
   assert.match(html, /Before the revision it concluded/);
 });
 
 test('each example says the thing it exists to say', () => {
   const says = {
-    'cs-4133-today': /The agent didn’t say what data it used\./,
-    'cs-4133-moved-on': /Outdated\.<\/b> Alert A3 joined this case at 13:57 UTC, 43 minutes after the data this verdict used\./,
-    'cs-4127-fresh': /No alert has joined this case since the data it used\./,
-    'cs-4127-low-confidence': /No action recommended\./,
+    'cs-4133-today': /The agent didn’t say what it read, or up to when\./,
+    'cs-4133-moved-on': /Outdated\.<\/b> Alert A3 happened at 13:57 UTC, 43 minutes after the data this verdict used\. The agent hasn’t seen it\. Checked 13:58 UTC\./,
+    'cs-4127-fresh': /Nothing in this case is newer than its data\. Checked 13:12 UTC\./,
+    'cs-4127-low-confidence': /No recommendation\.<\/b> The agent’s confidence is Low\. It reports: No network telemetry for this account\./,
     'cs-4133-revised': /Revised\./,
   };
   for (const file of readdirSync(join(here, 'examples')).filter((f) => f.endsWith('.json') && f !== 'clock.json')) {
@@ -150,7 +150,25 @@ test('with its script stripped, the widget still says why it is empty', () => {
   assert.match(withoutScripts, /<main id="card"[^>]*><p class="note">This card draws with a script, and scripts are switched off here\.<\/p><\/main>/);
 });
 
-test('two ratings that differ are named as differing, and the card claims to change neither', () => {
+test('two ratings that differ are named as differing, and nothing more is claimed', () => {
   const html = renderCard(example('cs-4133-moved-on'), CLOCK, NAMES);
-  assert.match(html, /They differ; the card changes neither\./);
+  assert.match(html, /They differ\.<\/p>/);
+});
+
+test('the card says what the agent read, what it could not, and which alerts the verdict is about', () => {
+  const moved = renderCard(example('cs-4133-moved-on'), CLOCK, NAMES);
+  assert.match(moved, /Read: Wiz Defend cloud telemetry, Cloud audit log\./);
+  assert.match(moved, /About alert A1 in this case\./);
+  const low = renderCard(example('cs-4127-low-confidence'), CLOCK, NAMES);
+  assert.match(low, /Not read: Network flow logs\./);
+});
+
+test('unchecked is said as unchecked, never as fresh', () => {
+  const m = readCard({ aiAnalysis: { verdict: 'BENIGN', analyzedAt: '2026-09-17T13:16:00Z', dataCutoffAt: '2026-09-17T13:14:00Z', sourcesRead: ['x'] } });
+  assert.match(renderCard(m, CLOCK, NAMES), /Can’t tell whether the case has moved on: nothing checked it\./);
+});
+
+test('a claim that lives only in the source links out to it, and nowhere else', () => {
+  const html = renderCard(example('cs-4133-moved-on'), CLOCK, NAMES);
+  assert.match(html, /<a href="https:\/\/wiz\.example\/issues\/[^"]+" target="_blank" rel="noopener noreferrer">Only in Wiz/);
 });
