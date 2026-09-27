@@ -84,7 +84,8 @@
   </style>
 </head>
 <body>
-  <main id="card" aria-live="polite"></main>
+  <!-- What shows if the console strips the script (Safe HTML rendering). The script replaces it. -->
+  <main id="card" aria-live="polite"><p class="note">This card draws with a script, and scripts are switched off here.</p></main>
   <script>
     // The host fills this in from the action's result before the widget loads.
     const actionResult = [{stepInstanceName}.JsonResult];

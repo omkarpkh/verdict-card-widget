@@ -84,7 +84,8 @@
   </style>
 </head>
 <body>
-  <main id="card" aria-live="polite"></main>
+  <!-- What shows if the console strips the script (Safe HTML rendering). The script replaces it. -->
+  <main id="card" aria-live="polite"><p class="note">This card draws with a script, and scripts are switched off here.</p></main>
   <script>
     // The host fills this in from the action's result before the widget loads.
     const actionResult = [{stepInstanceName}.JsonResult];
@@ -390,7 +391,7 @@ function renderRatings(m           , names       )         {
   if (m.severity) parts.push(`Agent severity <b>${m.severity}</b> (${esc(names.agent)})`);
   if (m.casePriority) parts.push(`Case priority <b>${m.casePriority}</b> (this console)`);
   const verdict =
-    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ; neither has been changed.') : '';
+    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ; the card changes neither.') : '';
   return `<p class="ratings">${parts.join(' · ')}.${verdict}</p>`;
 }
 

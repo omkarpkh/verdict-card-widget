@@ -143,3 +143,14 @@ test('a result stamped ahead of the analyst’s clock reads as new, never as an 
   const m = readCard({ aiAnalysis: { verdict: 'BENIGN', analyzedAt: '2026-09-17T14:16:00Z' } });
   assert.match(renderCard(m, Date.parse('2026-09-17T14:10:00Z'), NAMES), /Less than a minute old\./);
 });
+
+test('with its script stripped, the widget still says why it is empty', () => {
+  const dist = readFileSync(join(here, 'dist/verdict-card.html'), 'utf8');
+  const withoutScripts = dist.replace(/<script>[\s\S]*?<\/script>/g, '');
+  assert.match(withoutScripts, /<main id="card"[^>]*><p class="note">This card draws with a script, and scripts are switched off here\.<\/p><\/main>/);
+});
+
+test('two ratings that differ are named as differing, and the card claims to change neither', () => {
+  const html = renderCard(example('cs-4133-moved-on'), CLOCK, NAMES);
+  assert.match(html, /They differ; the card changes neither\./);
+});

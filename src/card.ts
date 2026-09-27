@@ -296,7 +296,7 @@ function renderRatings(m: CardModel, names: Names): string {
   if (m.severity) parts.push(`Agent severity <b>${m.severity}</b> (${esc(names.agent)})`);
   if (m.casePriority) parts.push(`Case priority <b>${m.casePriority}</b> (this console)`);
   const verdict =
-    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ; neither has been changed.') : '';
+    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ; the card changes neither.') : '';
   return `<p class="ratings">${parts.join(' · ')}.${verdict}</p>`;
 }
 

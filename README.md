@@ -2,7 +2,7 @@
 
 A drop-in replacement for the widget Google SecOps ships for Wiz's **Get Blue Agent Analysis** action. It says what the widget in use today doesn't: **how old the verdict is, what the agent looked at, and whether the case has moved on since.**
 
-It's one HTML file in the content hub's own format: the same action, placement, size and data binding as the widget it replaces. The case study behind it is at [omkarux.com/verdict-card](https://omkarux.com/verdict-card/).
+It's one HTML file and its definition, in the content hub's own format: the same action, placement, size and data binding as the widget it replaces. The case study behind it is at [omkarux.com/verdict-card](https://omkarux.com/verdict-card/).
 
 > Concept work. Not affiliated with Google or Wiz, and not tested with analysts yet. The example cases are invented.
 
@@ -22,7 +22,7 @@ Six results and three themes, and every state has its own link: `harness.html?r=
 Nothing needs to change in the integration for the first step. From today's seven fields, the card:
 - **gives the verdict its age**, counted live: "As of 9 Jun, 16:12 UTC. 109 days old." Today's widget shows `2026-06-09T16:12:58.253716Z`.
 - **keeps confidence a word.** Today's widget draws confidence with the same dots as severity.
-- **shows the whole conclusion.** Today's widget cuts it to one line.
+- **shows the whole conclusion.** Today's widget cuts it to one line, and the rest shows only on hover.
 - **says what it can't know yet:** "The agent didn't say what data it used." and "Not checked against alerts that joined this case later."
 
 ## What it asks the result to carry
@@ -44,11 +44,11 @@ The examples in [`examples/`](examples/) cover each of these, and [`third_party/
 
 ## What it doesn't do
 
-It never changes the case. The console's HTML widget displays; it can't write. So the card has:
+It never changes the case. The console's HTML widget displays; it can't write. (The one documented exception, an approval link, only approves or declines a playbook step that is waiting.) So the card has:
 - no buttons, forms or inputs
 - no requests, and no messages to the host
 
-The only controls are links out.
+The only controls are links out. If a console strips its script (Safe HTML rendering), it shows one line saying so, rather than a blank frame.
 
 The decisions (Accept, Override with a reason, Undo) belong to the integration as actions. The admin puts them on a Quick Actions widget, and their record is the Case Wall. The integration's analysis action can also write the verdict and its age as an insight (basic HTML, no scripts), so the line reaches the Case Wall even where no one installs the widget.
 
