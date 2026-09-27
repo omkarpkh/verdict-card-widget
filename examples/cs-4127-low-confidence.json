@@ -1,0 +1,54 @@
+{
+  "data": {
+    "issue": {
+      "threatDetectionDetails": {
+        "aiAnalysis": {
+          "id": "7f3c2a9e-51d4-4b8e-9c21-6a0e2d5f8b13",
+          "status": "COMPLETED",
+          "verdict": "MALICIOUS",
+          "analyzedAt": "2026-09-17T13:10:00.000Z",
+          "severity": "HIGH",
+          "confidenceLevel": "LOW",
+          "conclusion": "A new access key for svc-reporting was created by j.doe@example.com and used within minutes to read 12,840 objects from prod-exports. The agent had no network telemetry for this account, so it could not tell whether any data left the organisation.",
+          "dataCutoffAt": "2026-09-17T13:08:00.000Z",
+          "claims": [
+            {
+              "text": "The access key was created 3 minutes before the first read.",
+              "where": {
+                "kind": "alert",
+                "label": "A1"
+              }
+            },
+            {
+              "text": "12,840 objects were read in 6 minutes. This identity normally reads about 40 a day.",
+              "where": {
+                "kind": "alert",
+                "label": "A2"
+              }
+            },
+            {
+              "text": "203.0.113.44 has no earlier connections from this organisation.",
+              "where": {
+                "kind": "entity",
+                "label": "203.0.113.44"
+              }
+            },
+            {
+              "text": "j.doe@example.com has never administered svc-reporting before.",
+              "where": {
+                "kind": "source",
+                "label": "Wiz"
+              }
+            }
+          ],
+          "missingEvidence": "No network telemetry for this account."
+        }
+      }
+    }
+  },
+  "caseContext": {
+    "fetchedAt": "2026-09-17T13:12:00.000Z",
+    "casePriority": "MEDIUM",
+    "alertsAfterCutoff": []
+  }
+}

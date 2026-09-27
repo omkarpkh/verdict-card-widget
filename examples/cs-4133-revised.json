@@ -1,0 +1,45 @@
+{
+  "data": {
+    "issue": {
+      "threatDetectionDetails": {
+        "aiAnalysis": {
+          "id": "c2d9e4f1-8a37-4f0b-b6e5-19d7a3c4e2a0",
+          "status": "COMPLETED",
+          "verdict": "MALICIOUS",
+          "analyzedAt": "2026-09-17T14:10:00.000Z",
+          "severity": "HIGH",
+          "confidenceLevel": "HIGH",
+          "conclusion": "With alert A3 included, the key was used to make backup-archive publicly readable. That is not part of the backup job.",
+          "dataCutoffAt": "2026-09-17T13:59:00.000Z",
+          "claims": [
+            {
+              "text": "Public access was enabled on backup-archive using svc-backup’s key.",
+              "where": {
+                "kind": "alert",
+                "label": "A3"
+              }
+            },
+            {
+              "text": "The session that enabled it did not come from the backup provider’s range.",
+              "where": {
+                "kind": "source",
+                "label": "Wiz"
+              }
+            }
+          ],
+          "revisedFrom": {
+            "verdict": "BENIGN",
+            "analyzedAt": "2026-09-17T13:16:00.000Z",
+            "conclusion": "svc-backup’s key was used from 198.51.100.23, which is inside the published address range of the organisation’s backup provider. Listing backup-archive matches the nightly backup job. No objects were read beyond the job’s usual volume.",
+            "reason": "Re-analysed with alert A3, which joined the case after the first analysis."
+          }
+        }
+      }
+    }
+  },
+  "caseContext": {
+    "fetchedAt": "2026-09-17T14:11:00.000Z",
+    "casePriority": "MEDIUM",
+    "alertsAfterCutoff": []
+  }
+}

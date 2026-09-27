@@ -1,0 +1,52 @@
+{
+  "data": {
+    "issue": {
+      "threatDetectionDetails": {
+        "aiAnalysis": {
+          "id": "c2d9e4f1-8a37-4f0b-b6e5-19d7a3c4e2a0",
+          "status": "COMPLETED",
+          "verdict": "BENIGN",
+          "analyzedAt": "2026-09-17T13:16:00.000Z",
+          "severity": "LOW",
+          "confidenceLevel": "HIGH",
+          "conclusion": "svc-backup’s key was used from 198.51.100.23, which is inside the published address range of the organisation’s backup provider. Listing backup-archive matches the nightly backup job. No objects were read beyond the job’s usual volume.",
+          "dataCutoffAt": "2026-09-17T13:14:00.000Z",
+          "claims": [
+            {
+              "text": "198.51.100.23 is inside the backup provider’s published address range.",
+              "where": {
+                "kind": "source",
+                "label": "Wiz"
+              }
+            },
+            {
+              "text": "The listing falls inside the nightly backup window.",
+              "where": {
+                "kind": "alert",
+                "label": "A2"
+              }
+            },
+            {
+              "text": "No reads above the job’s usual volume.",
+              "where": {
+                "kind": "source",
+                "label": "Wiz"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "caseContext": {
+    "fetchedAt": "2026-09-17T13:18:00.000Z",
+    "casePriority": "MEDIUM",
+    "alertsAfterCutoff": [
+      {
+        "id": "A3",
+        "name": "Public access enabled on bucket backup-archive using svc-backup’s key",
+        "at": "2026-09-17T13:57:00.000Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+Verdict card for Wiz's Blue Agent in Google SecOps
+Copyright 2026 Omkar Khadamkar
+
+This product includes, unmodified and for comparison only, files from the
+Google SecOps content hub (https://github.com/chronicle/content-hub),
+licensed under the Apache License, Version 2.0:
+
+  third_party/google-content-hub/get_blue_agent_analysis.html
+  third_party/google-content-hub/get_blue_agent_analysis.yaml
+  third_party/google-content-hub/get_blue_agent_analysis_JsonResult_example.json
+
+Source path: content/response_integrations/google/wiz/ (widgets/ and resources/),
+fetched 27 September 2026 at commit 85d08c2e9591.

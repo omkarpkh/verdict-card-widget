@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Wiz - Blue Agent verdict card</title>
+  <!-- Verdict card for Wiz's Blue Agent in Google SecOps · a drop-in for widgets/get_blue_agent_analysis.html
+       Omkar Khadamkar · omkarux.com/verdict-card · Apache-2.0. Source: src/card.ts, built by build.mjs. -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600&amp;display=swap" rel="stylesheet">
+  <style>
+    /* The host's three widget themes (default, light, dark), by the same class names and the
+       same colour values its own widgets use, so the card reads as part of the console. */
+    :root {
+      --bg: #212c44;
+      --text: #ffffff;
+      --muted: #b5b8c3;
+      --line: #3a4a6c;
+      --panel: #26334f;
+      --link: #8ab4f8;
+      --malicious: #ff7a70;
+      --suspicious: #fff371;
+      --benign: #99d7ca;
+      --amber: #fff371;
+      --amber-bg: rgba(255, 243, 113, 0.10);
+      --font: 'Source Sans Pro', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+    }
+    html.light-theme {
+      --bg: #ffffff;
+      --text: #0f1029;
+      --muted: #585a69;
+      --line: #d3d8ea;
+      --panel: #f4f5fa;
+      --link: #1a57c6;
+      --malicious: #b32d21;
+      --suspicious: #7a5800;
+      --benign: #1b6e44;
+      --amber: #7a5800;
+      --amber-bg: #fff6d6;
+    }
+    html.dark-theme {
+      --bg: #232330;
+      --text: #ffffff;
+      --muted: #b5b8c3;
+      --line: #3a3a52;
+      --panel: #2b2b3a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body { background: var(--bg); color: var(--text); font: 400 14px/19px var(--font); overflow-y: auto; -webkit-font-smoothing: antialiased; }
+    main { display: grid; gap: 8px; padding: 10px 12px 12px; }
+    b { font-weight: 600; }
+    a { color: var(--link); text-underline-offset: 2px; }
+    .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+    .head { display: flex; align-items: baseline; gap: 8px; }
+    .eyebrow, .block h3 { font: 600 11px/14px var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+    .agent { font-weight: 600; }
+    .verdict { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; }
+    .word { font: 600 22px/26px var(--font); }
+    .v-malicious .word { color: var(--malicious); }
+    .v-suspicious .word { color: var(--suspicious); }
+    .v-benign .word { color: var(--benign); }
+    .conf { color: var(--muted); }
+    .conf b { color: var(--text); }
+    .age, .note, .fresh { color: var(--muted); }
+    .outdated { border: 1px solid var(--amber); background: var(--amber-bg); border-radius: 4px; padding: 6px 8px; }
+    .outdated b { color: var(--amber); }
+    .alert-name { color: var(--muted); font-size: 13px; line-height: 17px; margin-top: 2px; }
+    .withheld, .revised { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 6px 8px; }
+    .ratings { color: var(--muted); }
+    .ratings b { color: var(--text); }
+    .block h3 { margin-bottom: 3px; }
+    .count { text-transform: none; letter-spacing: 0; font-weight: 400; }
+    .claims { list-style: none; display: grid; gap: 6px; counter-reset: claim; }
+    .claims li { display: grid; grid-template-columns: 16px 1fr; column-gap: 6px; counter-increment: claim; }
+    .claims li::before { content: counter(claim); color: var(--muted); grid-row: span 2; }
+    .where { color: var(--muted); font-size: 13px; line-height: 17px; }
+    .earlier { margin-top: 6px; }
+    .earlier summary { cursor: pointer; color: var(--muted); }
+    .earlier p { margin-top: 4px; color: var(--muted); }
+    .foot { border-top: 1px solid var(--line); padding-top: 6px; color: var(--muted); font-size: 12px; line-height: 16px; }
+    .mono { font-family: var(--mono); font-size: 12px; }
+  </style>
+</head>
+<body>
+  <main id="card" aria-live="polite"></main>
+  <script>
+    // The host fills this in from the action's result before the widget loads.
+    const actionResult = [{stepInstanceName}.JsonResult];
+
+    // Change these two to reuse the card for another agent.
+    const NAMES = { agent: 'Wiz Blue Agent', source: 'Wiz' };
+
+    // The verdict card as a Google SecOps predefined widget: the rules and the markup, no DOM.
+// build.mjs strips the types and inlines this file into template.html, so the widget ships as
+// one HTML file, the way every widget in Google's content hub does
+// (github.com/chronicle/content-hub, content/response_integrations/google/wiz/widgets/).
+//
+// It reads the result of Wiz's "Get Blue Agent Analysis" action exactly as it arrives today, and
+// it says more as the result carries more. Every field it adds to that result is optional:
+//
+//   aiAnalysis.dataCutoffAt          the newest event the agent used              added by the agent
+//   aiAnalysis.claims[]              what it concluded from, and where to check   added by the agent
+//   aiAnalysis.missingEvidence       what it could not see                        added by the agent
+//   aiAnalysis.revisedFrom           the verdict this one replaces, and why       added by the agent
+//   aiAnalysis.url                   the analysis in Wiz                          added by the agent
+//   caseContext.fetchedAt            when the playbook added it to the case       added by the action
+//   caseContext.casePriority         this console's own rating of the case        added by the action
+//   caseContext.alertsAfterCutoff[]  alerts that joined the case after the cut-off added by the action
+//
+// A widget can display; it cannot change the case. So there is no button here that decides
+// anything: accept, override and undo are the integration's own actions, run from the host's
+// Quick Actions widget, and their record is the Case Wall. Links out are the only controls.
+
+                                                                        
+                                                                             
+
+                        
+                                      
+                
+                     
+ 
+
+                        
+               
+                      
+ 
+
+                             
+             
+               
+             
+ 
+
+                           
+                   
+                            
+                     
+                 
+ 
+
+                            
+                   
+                           
+                         
+                            
+                        
+                           
+                             
+                                   
+                     
+                         
+                         
+                            
+                     
+                     
+ 
+
+                        
+                
+                 
+ 
+
+// ---------------------------------------------------------------- reading the result
+
+                                   
+
+function isObj(x         )           {
+  return typeof x === 'object' && x !== null && !Array.isArray(x);
+}
+
+function dig(o         , ...keys          )          {
+  let cur          = o;
+  for (const k of keys) {
+    if (!isObj(cur)) return undefined;
+    cur = cur[k];
+  }
+  return cur;
+}
+
+function text(x         )         {
+  if (typeof x === 'string') return x.trim();
+  if (typeof x === 'number' && Number.isFinite(x)) return String(x);
+  return '';
+}
+
+function time(x         )                {
+  const s = text(x);
+  if (!s) return null;
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+}
+
+function level(x         )               {
+  switch (text(x).toLowerCase()) {
+    case 'informational':
+    case 'informative':
+    case 'info':
+      return 'Informational';
+    case 'low':
+      return 'Low';
+    case 'medium':
+      return 'Medium';
+    case 'high':
+      return 'High';
+    case 'critical':
+      return 'Critical';
+    default:
+      return null;
+  }
+}
+
+function verdictOf(x         )          {
+  switch (text(x).toLowerCase()) {
+    case 'malicious':
+      return 'Malicious';
+    case 'suspicious':
+      return 'Suspicious';
+    case 'benign':
+      return 'Benign';
+    default:
+      return 'Unknown';
+  }
+}
+
+// Only https links leave the widget. Anything else in a url field is dropped, not rendered.
+function safeUrl(x         )                {
+  const s = text(x);
+  return /^https:\/\/[^\s"'<>]+$/i.test(s) ? s : null;
+}
+
+// The same paths Google's widget accepts, so the card reads any shape that one reads.
+function findAnalysis(result         )                                         {
+  const first = Array.isArray(result) ? result[0] : result;
+  if (!isObj(first)) return null;
+  const candidates = [
+    dig(first, 'data', 'issue', 'threatDetectionDetails', 'aiAnalysis'),
+    dig(first, 'issue', 'threatDetectionDetails', 'aiAnalysis'),
+    dig(first, 'threatDetectionDetails', 'aiAnalysis'),
+    dig(first, 'aiAnalysis'),
+  ];
+  const nested = candidates.find(isObj);
+  const analysis = nested ?? ('verdict' in first ? first : undefined);
+  if (!isObj(analysis)) return null;
+  const context = isObj(first.caseContext) ? first.caseContext : {};
+  return { analysis, context };
+}
+
+function readWhere(x         )               {
+  if (!isObj(x)) return null;
+  const kind = text(x.kind).toLowerCase();
+  const label = text(x.label);
+  if (!label || (kind !== 'alert' && kind !== 'entity' && kind !== 'source')) return null;
+  return { kind: kind                 , label, url: safeUrl(x.url) };
+}
+
+function readClaim(x         )               {
+  if (!isObj(x)) return null;
+  const t = text(x.text);
+  return t ? { text: t, where: readWhere(x.where) } : null;
+}
+
+function readLater(x         )                    {
+  if (!isObj(x)) return null;
+  const id = text(x.id);
+  const at = time(x.at);
+  return id && at !== null ? { id, name: text(x.name), at } : null;
+}
+
+function readCard(result         )                   {
+  const found = findAnalysis(result);
+  if (!found) return null;
+  const a = found.analysis;
+  const c = found.context;
+  const claims = Array.isArray(a.claims) ? a.claims.map(readClaim).filter((x)             => x !== null) : null;
+  const later = Array.isArray(c.alertsAfterCutoff)
+    ? c.alertsAfterCutoff.map(readLater).filter((x)                  => x !== null).sort((x, y) => x.at - y.at)
+    : null;
+  const r = a.revisedFrom;
+  return {
+    verdict: verdictOf(a.verdict),
+    confidence: level(a.confidenceLevel),
+    severity: level(a.severity),
+    analysedAt: time(a.analyzedAt),
+    dataTo: time(a.dataCutoffAt),
+    fetchedAt: time(c.fetchedAt),
+    casePriority: level(c.casePriority),
+    laterAlerts: later,
+    conclusion: text(a.conclusion),
+    claims,
+    missing: text(a.missingEvidence) || null,
+    revision: isObj(r)
+      ? { verdict: verdictOf(r.verdict), analysedAt: time(r.analyzedAt), conclusion: text(r.conclusion), reason: text(r.reason) }
+      : null,
+    analysisId: text(a.id),
+    url: safeUrl(a.url),
+  };
+}
+
+// ---------------------------------------------------------------- the rules
+
+// Low confidence withdraws the recommendation, and so does a claim the agent says it could not make.
+function isLowConfidence(m           )          {
+  return m.confidence === 'Low' || m.missing !== null;
+}
+
+// What the verdict can be checked against: the agent's own data cut-off when it says one,
+// otherwise the moment it ran, since no data it used can be newer than that.
+function cutoffOf(m           )                {
+  return m.dataTo ?? m.analysedAt;
+}
+
+// null means nobody checked; an empty list means somebody checked and nothing came later.
+function alertsAfter(m           )                      {
+  const cutoff = cutoffOf(m);
+  if (m.laterAlerts === null || cutoff === null) return null;
+  return m.laterAlerts.filter((x) => x.at > cutoff);
+}
+
+// ---------------------------------------------------------------- words for times
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const pad = (n        )         => String(n).padStart(2, '0');
+
+function clock(ms        , now        )         {
+  const d = new Date(ms);
+  const n = new Date(now);
+  const hm = `${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}`;
+  const sameDay =
+    d.getUTCFullYear() === n.getUTCFullYear() && d.getUTCMonth() === n.getUTCMonth() && d.getUTCDate() === n.getUTCDate();
+  if (sameDay) return `${hm} UTC`;
+  const day = `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`;
+  return d.getUTCFullYear() === n.getUTCFullYear() ? `${day}, ${hm} UTC` : `${day} ${d.getUTCFullYear()}, ${hm} UTC`;
+}
+
+// Whole units, rounded down, so the card never makes a verdict sound older than it is.
+function span(ms        )         {
+  const min = Math.floor(Math.abs(ms) / 60_000);
+  if (min < 1) return 'less than a minute';
+  if (min < 60) return `${min} minute${min === 1 ? '' : 's'}`;
+  const h = Math.floor(min / 60);
+  if (h < 48) return `${h} hour${h === 1 ? '' : 's'}`;
+  return `${Math.floor(h / 24)} days`;
+}
+
+// ---------------------------------------------------------------- markup
+
+const ESCAPES                         = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+
+function esc(s        )         {
+  return s.replace(/[&<>"']/g, (ch) => ESCAPES[ch] ?? ch);
+}
+
+function linkOut(url        , label        )         {
+  return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${esc(label)}<span aria-hidden="true"> ↗</span><span class="sr"> (opens in a new tab)</span></a>`;
+}
+
+function whereText(w              , names       )         {
+  if (!w) return '<span class="where">Where to check it: not given</span>';
+  if (w.kind === 'alert') return `<span class="where">In this case · alert ${esc(w.label)}</span>`;
+  if (w.kind === 'entity') return `<span class="where">In this case · ${esc(w.label)}</span>`;
+  return `<span class="where">${w.url ? linkOut(w.url, `Only in ${w.label}`) : `Only in ${esc(w.label)}`}</span>`;
+}
+
+function renderWhen(m           , now        )         {
+  if (m.analysedAt === null) return '<p class="when">The agent didn’t say when it ran.</p>';
+  const cut = m.dataTo !== null ? `, using data to ${clock(m.dataTo, now)}` : '';
+  const said = m.dataTo === null ? '<p class="note">The agent didn’t say what data it used.</p>' : '';
+  // Never a negative age: an agent's clock can run ahead of the analyst's.
+  const age = span(Math.max(0, now - m.analysedAt));
+  return `<p class="when"><b>As of ${clock(m.analysedAt, now)}</b>${cut}. <span class="age">${age[0].toUpperCase()}${age.slice(1)} old.</span></p>${said}`;
+}
+
+function renderFreshness(m           , now        )         {
+  const later = alertsAfter(m);
+  const cutoff = cutoffOf(m);
+  if (later === null || cutoff === null) return '<p class="note">Not checked against alerts that joined this case later.</p>';
+  if (later.length === 0) return `<p class="fresh">No alert has joined this case since the data it used.</p>`;
+  const first = later[0];
+  const after = m.dataTo !== null ? 'after the data this verdict used' : 'after this verdict was made';
+  const more = later.length > 1 ? ` ${later.length - 1} more joined after it.` : '';
+  const name = first.name ? `<p class="alert-name">${esc(first.id)} · ${esc(first.name)}</p>` : '';
+  return `<div class="outdated" role="status"><p><b>Outdated.</b> Alert ${esc(first.id)} joined this case at ${clock(first.at, now)}, ${span(first.at - cutoff)} ${after}. The agent hasn’t seen it.${more}</p>${name}</div>`;
+}
+
+function renderRatings(m           , names       )         {
+  if (!m.severity && !m.casePriority) return '';
+  const parts           = [];
+  if (m.severity) parts.push(`Agent severity <b>${m.severity}</b> (${esc(names.agent)})`);
+  if (m.casePriority) parts.push(`Case priority <b>${m.casePriority}</b> (this console)`);
+  const verdict =
+    m.severity && m.casePriority ? (m.severity === m.casePriority ? ' They agree.' : ' They differ; neither has been changed.') : '';
+  return `<p class="ratings">${parts.join(' · ')}.${verdict}</p>`;
+}
+
+function renderClaims(m           , names       )         {
+  if (m.claims === null) return '<p class="note">The agent didn’t list the claims behind this verdict.</p>';
+  if (m.claims.length === 0) return '<p class="note">The agent listed no claims.</p>';
+  const inCase = m.claims.filter((c) => c.where && c.where.kind !== 'source').length;
+  const outside = m.claims.filter((c) => c.where?.kind === 'source').length;
+  const count = `${m.claims.length} · ${inCase} checkable in this case${outside ? ` · ${outside} only in ${esc(names.source)}` : ''}`;
+  const items = m.claims.map((c) => `<li><span class="claim">${esc(c.text)}</span>${whereText(c.where, names)}</li>`).join('');
+  return `<section class="block" aria-label="Claims"><h3>Claims <span class="count">${count}</span></h3><ol class="claims">${items}</ol></section>`;
+}
+
+function renderCard(m           , now        , names       )         {
+  const low = isLowConfidence(m);
+  const rev = m.revision;
+  const revised = rev
+    ? `<p class="revised"><b>Revised.</b> It said ${rev.verdict}${rev.analysedAt !== null ? ` as of ${clock(rev.analysedAt, now)}` : ''}.${rev.reason ? ` ${esc(rev.reason)}` : ''}</p>`
+    : '';
+  const withheld = low
+    ? `<div class="withheld"><b>No action recommended.</b> ${m.missing ? `The agent reports: ${esc(m.missing)}` : 'The agent’s confidence is low.'}</div>`
+    : '';
+  const earlier =
+    rev && rev.conclusion
+      ? `<details class="earlier"><summary>Before the revision it concluded</summary><p>${esc(rev.conclusion)}</p></details>`
+      : '';
+  const foot = [
+    m.fetchedAt !== null ? `Added to this case ${clock(m.fetchedAt, now)}` : '',
+    m.analysisId ? `Analysis <span class="mono">${esc(m.analysisId.slice(0, 8))}</span>` : '',
+    m.url ? linkOut(m.url, `Open in ${names.source}`) : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  return `<header class="head"><span class="eyebrow">AI verdict</span><span class="agent">${esc(names.agent)}</span></header>
+<p class="verdict v-${m.verdict.toLowerCase()}"><span class="word">${m.verdict}</span>${m.confidence ? `<span class="conf">Confidence <b>${m.confidence}</b></span>` : ''}</p>
+${revised}${withheld}${renderWhen(m, now)}${renderFreshness(m, now)}${renderRatings(m, names)}
+<section class="block" aria-label="Conclusion"><h3>Conclusion</h3><p class="conclusion">${m.conclusion ? esc(m.conclusion) : 'No conclusion in the result.'}</p>${earlier}</section>
+${renderClaims(m, names)}
+${foot ? `<footer class="foot">${foot}</footer>` : ''}`;
+}
+
+function renderEmpty(names       )         {
+  return `<p class="note">No ${esc(names.agent)} analysis in this result.</p>`;
+}
+
+    let fixedNow = null;
+    const now = () => (fixedNow === null ? Date.now() : fixedNow);
+
+    function draw() {
+      const model = readCard(actionResult);
+      document.getElementById('card').innerHTML = model ? renderCard(model, now(), NAMES) : renderEmpty(NAMES);
+    }
+
+    // The host posts its background colour; the widget picks the matching theme. Same contract
+    // as the host's own widgets: three known colours, otherwise light when the colour is bright.
+    function applyTheme(background) {
+      const bg = String(background).toLowerCase().trim();
+      let light = bg === '#bdc1c6';
+      const dark = bg === '#282837';
+      if (!light && !dark && bg !== '#2f3d5c') {
+        const rgb = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+        const hex = bg.startsWith('#') ? bg.slice(1) : '';
+        const full = hex.length === 3 ? hex.split('').map((c) => c + c).join('') : hex;
+        const [r, g, b] = rgb
+          ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
+          : full.length === 6
+            ? [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16))
+            : [NaN, NaN, NaN];
+        light = (r * 299 + g * 587 + b * 114) / 1000 > 128;
+      }
+      document.documentElement.classList.toggle('light-theme', light);
+      document.documentElement.classList.toggle('dark-theme', dark);
+    }
+
+    window.addEventListener('message', (event) => {
+      if (event.source !== window.parent) return;
+      const data = event.data;
+      if (typeof data !== 'object' || data === null) return;
+      const background = data.background || data.backgroundColor;
+      if (background) applyTheme(background);
+      // Test hook for the prototype and the harness, which run on a fixed clock. A real host never sends it.
+      if (typeof data.verdictCardNow === 'number') {
+        fixedNow = data.verdictCardNow;
+        draw();
+      }
+    });
+
+    draw();
+    // Age is the point, so it keeps counting while the case is open.
+    setInterval(draw, 60000);
+  </script>
+</body>
+</html>
