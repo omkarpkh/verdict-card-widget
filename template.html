@@ -22,7 +22,8 @@
       --suspicious: #fff371;
       --benign: #99d7ca;
       --amber: #fff371;
-      --amber-bg: rgba(255, 243, 113, 0.10);
+      --amber-bg: rgba(255, 243, 113, 0.12);
+      --amber-line: rgba(255, 243, 113, 0.45);
       --font: 'Source Sans Pro', 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
       --mono: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
     }
@@ -38,6 +39,7 @@
       --benign: #1b6e44;
       --amber: #7a5800;
       --amber-bg: #fff6d6;
+      --amber-line: transparent;
     }
     html.dark-theme {
       --bg: #232330;
@@ -49,44 +51,57 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; }
     body { background: var(--bg); color: var(--text); font: 400 14px/19px var(--font); overflow-y: auto; -webkit-font-smoothing: antialiased; }
-    main { display: grid; gap: 8px; padding: 10px 12px 12px; }
+    main { padding: 10px 12px 12px; font-variant-numeric: tabular-nums; }
     b { font-weight: 600; }
     a { color: var(--link); text-underline-offset: 2px; }
     .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-    .head { display: flex; align-items: baseline; gap: 8px; }
-    .eyebrow, .block h3 { font: 600 11px/14px var(--font); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-    .agent { font-weight: 600; }
-    .verdict { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 14px; }
+    .m, .sep { color: var(--muted); }
+    .sep { margin-left: 10px; font-weight: 400; }
+    .eyebrow, .rows dt, .body h3 { font: 600 12px/16px var(--font); letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); }
+    .eyebrow { margin-bottom: 2px; }
+
+    /* Line 1: the verdict, how sure the agent was, whether it still stands. Only an all-clear
+       loses its colour when it may not stand; a warning keeps its colour. */
+    .verdict { display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 10px; }
     .word { font: 600 22px/26px var(--font); }
     .v-malicious .word { color: var(--malicious); }
     .v-suspicious .word { color: var(--suspicious); }
     .v-benign .word { color: var(--benign); }
-    .conf { color: var(--muted); }
-    .conf b { color: var(--text); }
-    .age, .note, .fresh, .sources, .scope { color: var(--muted); }
-    .prov { display: grid; gap: 2px; }
-    .outdated { border: 1px solid var(--amber); background: var(--amber-bg); border-radius: 4px; padding: 6px 8px; }
-    .outdated b { color: var(--amber); }
-    .alert-name { color: var(--muted); font-size: 13px; line-height: 17px; margin-top: 2px; }
-    .withheld, .revised { border: 1px solid var(--line); background: var(--panel); border-radius: 4px; padding: 6px 8px; }
-    .ratings { color: var(--muted); }
-    .ratings b { color: var(--text); }
-    .block h3 { margin-bottom: 3px; }
+    .word.stale { color: var(--text); }
+    .conf.quiet { color: var(--muted); }
+    .conf.weak, .state { font-weight: 600; }
+    .state-current { font-weight: 400; color: var(--muted); }
+    .state-outdated { color: var(--amber); font-size: 16px; }
+    .state, .outdated p { overflow-wrap: anywhere; }
+    /* Too narrow for one line (the preview drawer): the state takes a line of its own, without the dot. */
+    @media (max-width: 500px) {
+      .verdict .state { flex-basis: 100%; }
+      .verdict .sep { display: none; }
+    }
+    .note { background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 5px 8px; margin-top: 7px; }
+
+    /* The facts it rests on, one labelled row each. */
+    .rows { display: grid; grid-template-columns: 52px 1fr; gap: 4px 10px; margin-top: 10px; }
+    .rows dt { line-height: 19px; }
+    .v { font-weight: 600; }
+    .outdated { background: var(--amber-bg); border: 1px solid var(--amber-line); border-radius: 4px; padding: 3px 7px; }
+    .alert-name, .where, .foot { color: var(--muted); font-size: 12px; line-height: 16px; }
+
+    /* The agent's own account, below a rule. */
+    .body { display: grid; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); }
     .count { text-transform: none; letter-spacing: 0; font-weight: 400; }
-    .claims { list-style: none; display: grid; gap: 6px; counter-reset: claim; }
+    .claims { list-style: none; display: grid; gap: 5px; counter-reset: claim; }
     .claims li { display: grid; grid-template-columns: 16px 1fr; column-gap: 6px; counter-increment: claim; }
     .claims li::before { content: counter(claim); color: var(--muted); grid-row: span 2; }
-    .where { color: var(--muted); font-size: 13px; line-height: 17px; }
-    .earlier { margin-top: 6px; }
+    .where a { color: var(--muted); text-decoration-color: var(--muted); }
     .earlier summary { cursor: pointer; color: var(--muted); }
     .earlier p { margin-top: 4px; color: var(--muted); }
-    .foot { border-top: 1px solid var(--line); padding-top: 6px; color: var(--muted); font-size: 12px; line-height: 16px; }
     .mono { font-family: var(--mono); font-size: 12px; }
   </style>
 </head>
 <body>
   <!-- What shows if the console strips the script (Safe HTML rendering). The script replaces it. -->
-  <main id="card" aria-live="polite"><p class="note">This card draws with a script, and scripts are switched off here.</p></main>
+  <main id="card"><p class="m">This card draws with a script, and scripts are switched off here.</p></main>
   <script>
     // The host fills this in from the action's result before the widget loads.
     const actionResult = [{stepInstanceName}.JsonResult];
@@ -99,9 +114,24 @@
     let fixedNow = null;
     const now = () => (fixedNow === null ? Date.now() : fixedNow);
 
+    // Draw once, then on each tick change only the words that moved with the clock (the age), so a
+    // screen reader is not read the whole card again every minute.
+    let drawn = '';
+    const shape = (html) => html.replace(/(<[^>]*data-tick[^>]*>)[^<]*/g, '$1');
     function draw() {
       const model = readCard(actionResult);
-      document.getElementById('card').innerHTML = model ? renderCard(model, now(), NAMES) : renderEmpty(NAMES);
+      const html = model ? renderCard(model, now(), NAMES) : renderEmpty(NAMES);
+      if (html === drawn) return;
+      const card = document.getElementById('card');
+      if (drawn && shape(html) === shape(drawn)) {
+        const next = document.createElement('template');
+        next.innerHTML = html;
+        const fresh = next.content.querySelectorAll('[data-tick]');
+        card.querySelectorAll('[data-tick]').forEach((el, i) => { el.textContent = fresh[i].textContent; });
+      } else {
+        card.innerHTML = html;
+      }
+      drawn = html;
     }
 
     // The host posts its background colour; the widget picks the matching theme. Same contract
